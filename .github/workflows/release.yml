@@ -32,7 +32,9 @@ jobs:
           cache: "pip"
 
       - name: Install dependencies
-        run: pip install -r requirements-dev.txt
+        run: |
+          pip install --upgrade pip setuptools
+          pip install -r requirements-dev.txt
 
       - name: Install Linux Qt runtime dependencies
         if: runner.os == 'Linux'
