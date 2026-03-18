@@ -22,9 +22,6 @@ jobs:
           - os: macos-latest
             artifact_name: twingate-idp-migrator-macos-arm64
             binary_suffix: ""
-          - os: macos-13
-            artifact_name: twingate-idp-migrator-macos-x64
-            binary_suffix: ""
 
     steps:
       - uses: actions/checkout@v4
@@ -42,7 +39,7 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo apt-get install -y --no-install-recommends \
-            libgl1-mesa-glx \
+            libgl1 \
             libegl1 \
             libxcb-cursor0 \
             libxcb-icccm4 \
@@ -58,6 +55,7 @@ jobs:
       - name: Build with PyInstaller
         env:
           QT_QPA_PLATFORM: offscreen
+        working-directory: ${{ github.workspace }}
         run: pyinstaller migrator.spec
 
       - name: Rename binary (Unix)
@@ -99,8 +97,7 @@ jobs:
           for f in \
             "dist/twingate-idp-migrator-linux-x64/twingate-idp-migrator-linux-x64" \
             "dist/twingate-idp-migrator-windows-x64.exe/twingate-idp-migrator-windows-x64.exe" \
-            "dist/twingate-idp-migrator-macos-arm64/twingate-idp-migrator-macos-arm64" \
-            "dist/twingate-idp-migrator-macos-x64/twingate-idp-migrator-macos-x64"; do
+            "dist/twingate-idp-migrator-macos-arm64/twingate-idp-migrator-macos-arm64"; do
             if [ ! -f "$f" ]; then
               echo "Missing: $f"
               exit 1
@@ -119,4 +116,3 @@ jobs:
             dist/twingate-idp-migrator-linux-x64/twingate-idp-migrator-linux-x64
             dist/twingate-idp-migrator-windows-x64.exe/twingate-idp-migrator-windows-x64.exe
             dist/twingate-idp-migrator-macos-arm64/twingate-idp-migrator-macos-arm64
-            dist/twingate-idp-migrator-macos-x64/twingate-idp-migrator-macos-x64
