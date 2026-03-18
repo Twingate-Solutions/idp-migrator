@@ -55,7 +55,6 @@ jobs:
       - name: Build with PyInstaller
         env:
           QT_QPA_PLATFORM: offscreen
-        working-directory: ${{ github.workspace }}
         run: pyinstaller migrator.spec
 
       - name: Rename binary (Unix)
