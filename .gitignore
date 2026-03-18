@@ -183,7 +183,6 @@ cython_debug/
 #  These are development-only files and are not part of the public project.
 .claude/
 CLAUDE.md
-
 docs/TECHNICAL_PLAN.md
 docs/superpowers/
 .superpowers/
