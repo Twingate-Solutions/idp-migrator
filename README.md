@@ -54,7 +54,6 @@ Download the latest pre-built binary from [GitHub Releases](releases/latest):
 |---|---|
 | Windows (x64) | `twingate-idp-migrator-windows-x64.exe` |
 | macOS (Apple Silicon) | `twingate-idp-migrator-macos-arm64` |
-| macOS (Intel) | `twingate-idp-migrator-macos-x64` |
 | Linux (x64) | `twingate-idp-migrator-linux-x64` |
 
 No Python installation required. Each binary is self-contained.
@@ -82,7 +81,7 @@ chmod +x twingate-idp-migrator-linux-x64
 - A Twingate API token with **Read** and **Write** scope
   - In the Twingate admin console: **Settings → API → Generate Token**
 - Your Twingate tenant name — the subdomain of your admin URL
-  - Example: if you access `app.twingate.com/acme`, your tenant name is `acme`
+  - Example: if you access `acme.twingate.com`, your tenant name is `acme`
 - Your new IdP's groups must already be synced into Twingate before running the migration
 
 ---
