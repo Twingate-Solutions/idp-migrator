@@ -58,6 +58,15 @@ Download the latest pre-built binary from [GitHub Releases](releases/latest):
 
 No Python installation required. Each binary is self-contained.
 
+**Windows:** The binary is self-signed rather than signed by a commercial certificate authority, so Windows Defender SmartScreen may show a "Windows protected your PC" warning the first time you run it. This is expected for community-distributed tooling. To proceed:
+
+1. Click **More info**
+2. Click **Run anyway**
+
+If you are on a managed device where **Run anyway** is not shown, your IT administrator has restricted unsigned executable launches via Group Policy. In that case, the simplest alternative is to [run the tool from source](#running-from-source) instead — Python and pip are all that is required.
+
+> If you want to verify the binary before running it, the SHA-256 checksum for each release asset is listed in the release notes on the [Releases page](releases/latest).
+
 **macOS:** After downloading, remove the quarantine flag before running:
 
 ```bash

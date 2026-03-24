@@ -64,6 +64,40 @@ jobs:
         run: |
           mv dist/twingate-idp-migrator dist/${{ matrix.artifact_name }}
 
+      - name: Sign binary (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # Generate a self-signed code-signing certificate valid for 3 years
+          $cert = New-SelfSignedCertificate `
+            -Subject "CN=Twingate IDP Migrator" `
+            -Type CodeSigning `
+            -HashAlgorithm SHA256 `
+            -CertStoreLocation Cert:\CurrentUser\My `
+            -NotAfter (Get-Date).AddYears(3)
+
+          # Export to a temporary PFX
+          $pw = ConvertTo-SecureString "signing-temp" -Force -AsPlainText
+          Export-PfxCertificate -Cert $cert -FilePath signing.pfx -Password $pw | Out-Null
+
+          # Locate signtool from the Windows SDK (picks the latest x64 build)
+          $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" `
+            -Recurse -Filter signtool.exe |
+            Where-Object { $_.FullName -like "*x64*" } |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1 -ExpandProperty FullName
+
+          # Sign with a public timestamp server so the signature survives cert expiry
+          & $signtool sign `
+            /f signing.pfx /p signing-temp `
+            /fd SHA256 `
+            /tr http://timestamp.digicert.com /td SHA256 `
+            dist\twingate-idp-migrator.exe
+
+          # Clean up — cert and PFX are ephemeral per-run
+          Remove-Item signing.pfx
+          Remove-Item "Cert:\CurrentUser\My\$($cert.Thumbprint)"
+
       - name: Rename binary (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
