@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import random
 from typing import Any
 
@@ -137,10 +138,8 @@ class TwingateClient:
         call gets a fresh client bound to its own event loop.
         """
         if self._http is not None:
-            try:
+            with contextlib.suppress(Exception):
                 await self._http.aclose()
-            except Exception:
-                pass
             self._http = None
 
     async def close(self) -> None:

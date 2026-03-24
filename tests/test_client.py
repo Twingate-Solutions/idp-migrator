@@ -47,15 +47,13 @@ _RESOURCE_NODE: dict[str, Any] = {
     "access": {
         "edges": [
             {
-                "node": {
-                    "principalId": "R3JvdXA6MTAw",
-                    "securityPolicy": {
-                        "id": "U2VjdXJpdHlQb2xpY3k6MQ",
-                        "name": "MFA Required",
-                    },
-                    "expiresAt": None,
-                    "accessPolicy": {"mode": "MANUAL"},
-                }
+                "node": {"id": "R3JvdXA6MTAw"},
+                "securityPolicy": {
+                    "id": "U2VjdXJpdHlQb2xpY3k6MQ",
+                    "name": "MFA Required",
+                },
+                "expiresAt": None,
+                "accessPolicy": {"mode": "MANUAL", "durationSeconds": None},
             }
         ],
         "pageInfo": {"hasNextPage": False, "endCursor": None},
@@ -239,12 +237,10 @@ class TestFetchAllResourcesWithAccess:
             "access": {
                 "edges": [
                     {
-                        "node": {
-                            "principalId": "R3JvdXA6MTAw",
-                            "securityPolicy": None,
-                            "expiresAt": None,
-                            "accessPolicy": None,
-                        }
+                        "node": {"id": "R3JvdXA6MTAw"},
+                        "securityPolicy": None,
+                        "expiresAt": None,
+                        "accessPolicy": None,
                     }
                 ],
                 "pageInfo": {
@@ -267,12 +263,10 @@ class TestFetchAllResourcesWithAccess:
                         "access": {
                             "edges": [
                                 {
-                                    "node": {
-                                        "principalId": "R3JvdXA6MjAw",
-                                        "securityPolicy": None,
-                                        "expiresAt": None,
-                                        "accessPolicy": {"mode": "AUTO_LOCK"},
-                                    }
+                                    "node": {"id": "R3JvdXA6MjAw"},
+                                    "securityPolicy": None,
+                                    "expiresAt": None,
+                                    "accessPolicy": {"mode": "AUTO_LOCK", "durationSeconds": 86400},
                                 }
                             ],
                             "pageInfo": {
@@ -294,6 +288,7 @@ class TestFetchAllResourcesWithAccess:
         assert resources[0].access_edges[1].principal_id == "R3JvdXA6MjAw"
         assert resources[0].access_edges[1].access_policy is not None
         assert resources[0].access_edges[1].access_policy.mode == AccessPolicyMode.AUTO_LOCK
+        assert resources[0].access_edges[1].access_policy.duration_seconds == 86400
 
 
 # ------------------------------------------------------------------
@@ -449,19 +444,20 @@ class TestAccessInput:
         assert result == {"principalId": "R3JvdXA6MjAw"}
 
     def test_full(self) -> None:
-        """All fields set produces a complete dict."""
+        """All fields set produces a complete dict including durationSeconds."""
         ai = AccessInput(
             principal_id="R3JvdXA6MjAw",
             security_policy_id="U2VjdXJpdHlQb2xpY3k6MQ",
             expires_at="2026-12-31T23:59:59Z",
             access_policy_mode=AccessPolicyMode.AUTO_LOCK,
+            access_policy_duration_seconds=86400,
         )
         result = ai.to_graphql_dict()
         assert result == {
             "principalId": "R3JvdXA6MjAw",
             "securityPolicyId": "U2VjdXJpdHlQb2xpY3k6MQ",
             "expiresAt": "2026-12-31T23:59:59Z",
-            "accessPolicy": {"mode": "AUTO_LOCK"},
+            "accessPolicy": {"mode": "AUTO_LOCK", "durationSeconds": 86400},
         }
 
     def test_partial_fields(self) -> None:

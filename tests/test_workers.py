@@ -27,6 +27,7 @@ def make_mock_client() -> MagicMock:
     client.fetch_all_resources_with_access = AsyncMock(
         return_value=[TwingateResource(id="r1", name="prod-db")]
     )
+    client._close_http = AsyncMock(return_value=None)
     return client
 
 
@@ -75,6 +76,7 @@ def test_execute_worker_cancel_stops_early() -> None:
     changelog = ChangeLog(tenant="test", started_at=datetime.now())
     mock_client = MagicMock()
     mock_client.add_resource_access = AsyncMock(return_value=True)
+    mock_client._close_http = AsyncMock(return_value=None)
 
     worker = ExecuteWorker.__new__(ExecuteWorker)
     worker._client = mock_client
@@ -105,6 +107,7 @@ def test_execute_worker_no_cancel_runs_all() -> None:
     changelog = ChangeLog(tenant="test", started_at=datetime.now())
     mock_client = MagicMock()
     mock_client.add_resource_access = AsyncMock(return_value=True)
+    mock_client._close_http = AsyncMock(return_value=None)
 
     worker = ExecuteWorker.__new__(ExecuteWorker)
     worker._client = mock_client
