@@ -46,7 +46,7 @@ class ConnectWorker(QThread):
     def run(self) -> None:
         """Run the connection check in a background thread."""
         try:
-            ok = asyncio.run(self._client.connect())
+            ok = asyncio.run(self._connect())
             self.finished.emit(ok)
         except TwingateAuthError as exc:
             logger.warning("connect_worker_auth_error", error=str(exc))
@@ -54,6 +54,13 @@ class ConnectWorker(QThread):
         except Exception as exc:
             logger.error("connect_worker_error", error=str(exc))
             self.error.emit(str(exc))
+
+    async def _connect(self) -> bool:
+        """Connect and clean up the HTTP client before returning."""
+        try:
+            return await self._client.connect()
+        finally:
+            await self._client._close_http()
 
 
 class FetchWorker(QThread):
@@ -81,9 +88,12 @@ class FetchWorker(QThread):
 
     async def _fetch(self) -> FetchResult:
         """Inner async method — fetches groups and resources concurrently."""
-        groups = await self._client.fetch_all_groups()
-        resources = await self._client.fetch_all_resources_with_access()
-        return FetchResult(groups=groups, resources=resources)
+        try:
+            groups = await self._client.fetch_all_groups()
+            resources = await self._client.fetch_all_resources_with_access()
+            return FetchResult(groups=groups, resources=resources)
+        finally:
+            await self._client._close_http()
 
 
 class ExecuteWorker(QThread):
@@ -136,15 +146,18 @@ class ExecuteWorker(QThread):
         on_progress: ProgressCallback | None,
     ) -> ExecutionResult:
         """Test-accessible inner method that accepts an external progress callback."""
-        if self._demo_mode:
-            return await self._demo_execute(on_progress)
-        return await execute_plan(
-            client=self._client,
-            plan=self._plan,
-            changelog=self._changelog,
-            on_progress=on_progress,
-            cancel_check=self._cancel_event.is_set,
-        )
+        try:
+            if self._demo_mode:
+                return await self._demo_execute(on_progress)
+            return await execute_plan(
+                client=self._client,
+                plan=self._plan,
+                changelog=self._changelog,
+                on_progress=on_progress,
+                cancel_check=self._cancel_event.is_set,
+            )
+        finally:
+            await self._client._close_http()
 
     async def _demo_execute(self, on_progress: ProgressCallback | None) -> ExecutionResult:
         """Simulate migration execution with artificial delay — no real API calls."""
@@ -200,14 +213,17 @@ class RollbackWorker(QThread):
         def on_progress(current: int, total: int, entry: ChangeLogEntry, success: bool) -> None:
             self.progress.emit(current, total, entry, success)
 
-        if self._demo_mode:
-            return await self._demo_rollback(on_progress)
-        return await rollback(
-            client=self._client,
-            changelog=self._changelog,
-            scope=self._scope,
-            on_progress=on_progress,
-        )
+        try:
+            if self._demo_mode:
+                return await self._demo_rollback(on_progress)
+            return await rollback(
+                client=self._client,
+                changelog=self._changelog,
+                scope=self._scope,
+                on_progress=on_progress,
+            )
+        finally:
+            await self._client._close_http()
 
     async def _demo_rollback(
         self,

@@ -88,6 +88,7 @@ async def execute_plan(
                 security_policy_id=action.security_policy_id,
                 expires_at=action.expires_at.isoformat() if action.expires_at else None,
                 access_policy_mode=action.access_policy_mode,
+                access_policy_duration_seconds=action.access_policy_duration_seconds,
             )
             api_ok = await client.add_resource_access(action.resource_id, [access_input])
             if api_ok:

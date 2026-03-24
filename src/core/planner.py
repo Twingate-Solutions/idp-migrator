@@ -87,6 +87,9 @@ def build_plan(
                     access_policy_mode=from_edge.access_policy.mode
                     if from_edge.access_policy
                     else None,
+                    access_policy_duration_seconds=from_edge.access_policy.duration_seconds
+                    if from_edge.access_policy
+                    else None,
                 )
             )
 

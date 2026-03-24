@@ -41,7 +41,13 @@ class TwingateAuthError(TwingateAPIError):
 class AccessInput:
     """Input for a single access entry in resourceAccessAdd."""
 
-    __slots__ = ("principal_id", "security_policy_id", "expires_at", "access_policy_mode")
+    __slots__ = (
+        "principal_id",
+        "security_policy_id",
+        "expires_at",
+        "access_policy_mode",
+        "access_policy_duration_seconds",
+    )
 
     def __init__(
         self,
@@ -49,6 +55,7 @@ class AccessInput:
         security_policy_id: str | None = None,
         expires_at: str | None = None,
         access_policy_mode: AccessPolicyMode | None = None,
+        access_policy_duration_seconds: int | None = None,
     ) -> None:
         """Initialise an access input entry.
 
@@ -57,11 +64,13 @@ class AccessInput:
             security_policy_id: Optional security policy override.
             expires_at: ISO-8601 timestamp for ephemeral access, or None.
             access_policy_mode: Access mode override, or None for default.
+            access_policy_duration_seconds: Required when mode is AUTO_LOCK.
         """
         self.principal_id = principal_id
         self.security_policy_id = security_policy_id
         self.expires_at = expires_at
         self.access_policy_mode = access_policy_mode
+        self.access_policy_duration_seconds = access_policy_duration_seconds
 
     def to_graphql_dict(self) -> dict[str, Any]:
         """Serialise to a dict suitable for GraphQL variables."""
@@ -71,7 +80,10 @@ class AccessInput:
         if self.expires_at is not None:
             result["expiresAt"] = self.expires_at
         if self.access_policy_mode is not None:
-            result["accessPolicy"] = {"mode": str(self.access_policy_mode)}
+            ap: dict[str, Any] = {"mode": str(self.access_policy_mode)}
+            if self.access_policy_duration_seconds is not None:
+                ap["durationSeconds"] = self.access_policy_duration_seconds
+            result["accessPolicy"] = ap
         return result
 
 
@@ -103,10 +115,7 @@ class TwingateClient:
             "Content-Type": "application/json",
         }
         self._closed: bool = False
-        self._http: httpx.AsyncClient = httpx.AsyncClient(
-            headers=self._headers,
-            timeout=httpx.Timeout(connect=10.0, read=30.0, write=30.0, pool=5.0),
-        )
+        self._http: httpx.AsyncClient | None = None
 
     async def __aenter__(self) -> TwingateClient:
         return self
@@ -114,10 +123,30 @@ class TwingateClient:
     async def __aexit__(self, *_: object) -> None:
         await self.close()
 
+    def _make_http_client(self) -> httpx.AsyncClient:
+        """Create a new HTTP client bound to the current event loop."""
+        return httpx.AsyncClient(
+            headers=self._headers,
+            timeout=httpx.Timeout(connect=10.0, read=30.0, write=30.0, pool=5.0),
+        )
+
+    async def _close_http(self) -> None:
+        """Close and discard the HTTP client without permanently closing this instance.
+
+        Call this at the end of each asyncio.run() invocation so the next
+        call gets a fresh client bound to its own event loop.
+        """
+        if self._http is not None:
+            try:
+                await self._http.aclose()
+            except Exception:
+                pass
+            self._http = None
+
     async def close(self) -> None:
-        """Close the underlying HTTP client."""
+        """Permanently close the underlying HTTP client."""
         self._closed = True
-        await self._http.aclose()
+        await self._close_http()
 
     # ------------------------------------------------------------------
     # Low-level helpers
@@ -139,6 +168,9 @@ class TwingateClient:
         """
         if self._closed:
             raise TwingateAPIError("Client is already closed")
+
+        if self._http is None:
+            self._http = self._make_http_client()
 
         payload: dict[str, Any] = {"query": query}
         if variables:
@@ -454,16 +486,19 @@ def _parse_access_edges(raw_edges: list[dict[str, Any]]) -> list[AccessEdge]:
     result: list[AccessEdge] = []
     for edge in raw_edges:
         node = edge["node"]
-        sp_node = node.get("securityPolicy")
-        ap_node = node.get("accessPolicy")
+        sp_node = edge.get("securityPolicy")
+        ap_node = edge.get("accessPolicy")
         result.append(
             AccessEdge(
-                principal_id=node["principalId"],
+                principal_id=node["id"],
                 security_policy=SecurityPolicyRef(id=sp_node["id"], name=sp_node["name"])
                 if sp_node
                 else None,
-                expires_at=node.get("expiresAt"),
-                access_policy=AccessPolicy(mode=AccessPolicyMode(ap_node["mode"]))
+                expires_at=edge.get("expiresAt"),
+                access_policy=AccessPolicy(
+                    mode=AccessPolicyMode(ap_node["mode"]),
+                    duration_seconds=ap_node.get("durationSeconds"),
+                )
                 if ap_node
                 else None,
             )

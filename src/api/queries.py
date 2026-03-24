@@ -46,15 +46,18 @@ query ListResources($first: Int, $after: String) {{
         access(first: {_ACCESS_PAGE_SIZE}) {{
           edges {{
             node {{
-              principalId
-              securityPolicy {{
+              ... on Node {{
                 id
-                name
               }}
-              expiresAt
-              accessPolicy {{
-                mode
-              }}
+            }}
+            securityPolicy {{
+              id
+              name
+            }}
+            expiresAt
+            accessPolicy {{
+              mode
+              durationSeconds
             }}
           }}
           pageInfo {{
@@ -75,15 +78,17 @@ query GetResourceAccess($id: ID!, $first: Int, $after: String) {
     access(first: $first, after: $after) {
       edges {
         node {
-          principalId
-          securityPolicy {
+          ... on Node {
             id
-            name
           }
-          expiresAt
-          accessPolicy {
-            mode
-          }
+        }
+        securityPolicy {
+          id
+          name
+        }
+        expiresAt
+        accessPolicy {
+          mode
         }
       }
       pageInfo {

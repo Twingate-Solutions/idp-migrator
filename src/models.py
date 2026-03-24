@@ -33,6 +33,7 @@ class AccessPolicy(BaseModel):
     """Access policy applied to a resource access edge."""
 
     mode: AccessPolicyMode
+    duration_seconds: int | None = None
 
 
 class TwingateGroup(BaseModel):
@@ -87,6 +88,7 @@ class MigrationAction(BaseModel):
     security_policy_name: str | None = None
     expires_at: datetime | None = None
     access_policy_mode: AccessPolicyMode | None = None
+    access_policy_duration_seconds: int | None = None
 
 
 class MigrationPlan(BaseModel):
