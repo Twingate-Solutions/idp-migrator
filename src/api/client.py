@@ -105,7 +105,9 @@ class TwingateClient:
         """Initialise the client.
 
         Args:
-            tenant: Twingate tenant name (e.g. "acme" for acme.twingate.com).
+            tenant: Twingate tenant name — the label(s) before ".twingate.com"
+                (e.g. "acme" for acme.twingate.com, or "acme.us1" for shard-based
+                acme.us1.twingate.com).
             api_key: Admin API key. Never logged or persisted.
         """
         self._tenant = tenant

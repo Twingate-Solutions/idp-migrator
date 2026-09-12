@@ -89,8 +89,10 @@ chmod +x twingate-idp-migrator-linux-x64
 - A Twingate account with administrator access
 - A Twingate API token with **Read** and **Write** scope
   - In the Twingate admin console: **Settings → API → Generate Token**
-- Your Twingate tenant name — the subdomain of your admin URL
-  - Example: if you access `acme.twingate.com`, your tenant name is `acme`
+- Your Twingate tenant name — the part of your Admin Console URL before `.twingate.com`.
+  Copy it from the URL rather than assuming a single label:
+  - `acme.twingate.com` (legacy) → enter `acme`
+  - `acme.us1.twingate.com` (shard-based, where `us1` is the shard) → enter `acme.us1`
 - Your new IdP's groups must already be synced into Twingate before running the migration
 
 ---

@@ -71,7 +71,7 @@ class ConnectionPage(QWidget):
         form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
 
         self._tenant_edit = QLineEdit()
-        self._tenant_edit.setPlaceholderText("e.g. acme  (enter TEST to use demo data)")
+        self._tenant_edit.setPlaceholderText("e.g. acme or acme.us1  (enter TEST to use demo data)")
         self._tenant_edit.setMaximumWidth(340)
         form.addRow("Tenant Name:", self._tenant_edit)
 
@@ -84,8 +84,10 @@ class ConnectionPage(QWidget):
         outer.addWidget(group)
 
         help_text = QLabel(
-            "Tenant name: the subdomain of your Twingate admin URL — "
-            "if you access app.twingate.com/acme, enter acme.\n"
+            "Tenant name: the part of your Twingate Admin Console URL before "
+            "'.twingate.com'. Copy it from the URL rather than assuming a single label — "
+            "for acme.twingate.com enter acme; for acme.us1.twingate.com (shard-based) "
+            "enter acme.us1.\n"
             "API key: generate one in the Twingate admin console under Settings → API Keys "
             "with Read and Write permissions.\n"
             "Demo mode: enter TEST in both fields to walk through the tool with sample data."
