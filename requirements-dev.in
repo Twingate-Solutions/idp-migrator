@@ -1,0 +1,13 @@
+# Dev / test / build dependency intent (loose ranges).
+#
+# Human-edited source of truth for dev deps. After changing a range here,
+# regenerate the pinned lock (requirements-dev.txt) so CI installs fixed
+# versions and never drifts — see requirements-dev.txt for the command.
+-r requirements.in
+pytest>=8.0,<9.0
+pytest-asyncio>=0.23,<1.0
+pytest-httpx>=0.30,<1.0
+respx>=0.21,<1.0
+ruff>=0.5,<1.0
+mypy>=1.10,<2.0
+pyinstaller>=6.8,<7.0

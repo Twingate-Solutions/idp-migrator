@@ -1,0 +1,16 @@
+# Runtime dependency intent (loose ranges).
+#
+# This is the human-edited source of truth for runtime deps. After changing a
+# range here, regenerate the pinned lock (requirements.txt) so CI installs
+# fixed versions and never drifts:
+#
+#   python -m venv .venv-lock
+#   .venv-lock/bin/pip install -r requirements.in      # (Scripts\ on Windows)
+#   .venv-lock/bin/pip freeze > requirements.txt
+#   # then re-add the header + OS markers, see requirements.txt
+PySide6>=6.7,<7.0
+httpx>=0.27,<1.0
+pydantic>=2.7,<3.0
+pydantic-settings>=2.3,<3.0
+rapidfuzz>=3.9,<4.0
+structlog>=24.1,<25.0

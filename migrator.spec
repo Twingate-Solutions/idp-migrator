@@ -2,7 +2,23 @@
 # PyInstaller spec for twingate-idp-migrator
 # Build with: pyinstaller migrator.spec
 
+import os
+
 block_cipher = None
+
+# --- Version injection -------------------------------------------------------
+# The attribution User-Agent (src/api/client.py) needs the build identity, but
+# importlib.metadata is unreliable in a frozen binary. release.yml passes the
+# git tag as APP_VERSION at build time; capture it here and emit a runtime hook
+# that re-sets it inside the frozen app, where the build env var is long gone.
+# Local builds with no APP_VERSION set fall back to "0.0.0-dev".
+_app_version = os.environ.get("APP_VERSION", "").lstrip("v") or "0.0.0-dev"
+_version_hook_path = os.path.join(os.getcwd(), "_pyi_version_hook.py")
+with open(_version_hook_path, "w", encoding="utf-8") as _f:
+    _f.write(
+        "import os\n"
+        f'os.environ.setdefault("APP_VERSION", "{_app_version}")\n'
+    )
 
 a = Analysis(
     ["src/main.py"],
@@ -36,7 +52,7 @@ a = Analysis(
     ],
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=[],
+    runtime_hooks=[_version_hook_path],
     excludes=[
         "tkinter",
         "unittest",

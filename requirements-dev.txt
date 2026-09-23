@@ -1,8 +1,38 @@
+# Pinned dev / test / build lock — DO NOT EDIT BY HAND.
+#
+# Exact versions frozen with pip to stop CI dependency drift. Pulls in the
+# pinned runtime lock, then adds the dev/test/build tools. Edit ranges in
+# requirements-dev.in, then regenerate:
+#
+#   python -m venv .venv-lock
+#   .venv-lock/Scripts/pip install -r requirements-dev.in   # bin/ on Unix
+#   .venv-lock/Scripts/pip freeze > frozen.txt
+#   # rebuild this file from frozen.txt: keep the "-r requirements.txt" line,
+#   # list only the packages not already in requirements.txt, and re-apply the
+#   # OS markers below (a Windows freeze omits macholib; a Linux/macOS freeze
+#   # omits pefile/pywin32-ctypes/colorama).
+#
+# Resolved on Python 3.12. OS markers keep the release matrix (Linux, Windows,
+# macOS) installing cleanly from this one lock: the marked lines are PyInstaller
+# and pytest build-time deps that only exist on one platform.
 -r requirements.txt
-pytest>=8.0,<9.0
-pytest-asyncio>=0.23,<1.0
-pytest-httpx>=0.30,<1.0
-respx>=0.21,<1.0
-ruff>=0.5,<1.0
-mypy>=1.10,<2.0
-pyinstaller>=6.8,<7.0
+altgraph==0.17.5
+colorama==0.4.6 ; sys_platform == 'win32'
+iniconfig==2.3.0
+librt==0.15.0
+macholib==1.16.4 ; sys_platform == 'darwin'
+mypy==1.20.2
+mypy-extensions==1.1.0
+packaging==26.3
+pathspec==1.1.1
+pefile==2024.8.26 ; sys_platform == 'win32'
+pluggy==1.6.0
+Pygments==2.21.0
+pyinstaller==6.22.3
+pyinstaller-hooks-contrib==2026.7
+pytest==8.4.2
+pytest-asyncio==0.26.0
+pytest-httpx==0.35.0
+pywin32-ctypes==0.2.3 ; sys_platform == 'win32'
+respx==0.23.1
+ruff==0.16.8

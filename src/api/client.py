@@ -21,6 +21,7 @@ from src.models import (
     TwingateResource,
 )
 from src.utils.logging import get_logger
+from src.version import get_version
 
 logger = get_logger(__name__)
 
@@ -29,6 +30,46 @@ _BASE_BACKOFF = 1.0
 _MAX_BACKOFF = 60.0
 _BACKOFF_FACTOR = 2.0
 _MAX_RETRIES = 5
+
+#: Canonical product token for the attribution User-Agent (repo slug, lowercase).
+_PRODUCT = "twingate-idp-migrator"
+
+
+def build_user_agent(
+    *,
+    version: str,
+    op: str | None = None,
+) -> str:
+    """Build the Twingate API attribution ``User-Agent`` string.
+
+    Format::
+
+        <product>/<version> (<key=value>; …) python-httpx/<version>
+
+    The parenthesised comment is the analytics payload. This project emits a
+    single key, ``op`` — the operation label — which is the only signal the
+    API cannot already infer. The comment is omitted entirely when ``op`` is
+    ``None`` (the connection-level default header).
+
+    Key order is fixed and stable: log-store extraction is positional, so the
+    order of any keys present here must never change. See
+    ``docs/TECHNICAL_PLAN.md`` § Twingate GraphQL API Integration.
+
+    Args:
+        version: Build identity (see ``src.version.get_version``).
+        op: Short operation label (e.g. ``"add_access"``), or ``None`` for the
+            config-level header with no comment.
+
+    Returns:
+        The fully-formed User-Agent header value. The trailing ``python-httpx``
+        token is read from the runtime library version, never hardcoded.
+    """
+    pairs: list[str] = []
+    if op is not None:
+        pairs.append(f"op={op}")
+
+    comment = f" ({'; '.join(pairs)})" if pairs else ""
+    return f"{_PRODUCT}/{version}{comment} python-httpx/{httpx.__version__}"
 
 
 class TwingateAPIError(Exception):
@@ -112,10 +153,16 @@ class TwingateClient:
         """
         self._tenant = tenant
         self._url = f"https://{tenant}.twingate.com/api/graphql/"
+        # Resolved once; used as the build identity in the attribution UA.
+        self._version = get_version()
         # api_key intentionally not stored as a public attribute
         self._headers = {
             "X-API-KEY": api_key,
             "Content-Type": "application/json",
+            # Config-level attribution UA (no per-op comment). Per-request
+            # calls override this with an op-specific value; setting it here
+            # guarantees no code path ever falls back to the httpx default.
+            "User-Agent": build_user_agent(version=self._version),
         }
         self._closed: bool = False
         self._http: httpx.AsyncClient | None = None
@@ -153,12 +200,17 @@ class TwingateClient:
     # Low-level helpers
     # ------------------------------------------------------------------
 
-    async def _post(self, query: str, variables: dict[str, Any] | None = None) -> dict[str, Any]:
+    async def _post(
+        self, query: str, variables: dict[str, Any] | None = None, *, op: str | None = None
+    ) -> dict[str, Any]:
         """Execute one GraphQL request with retry/backoff on 429 and 5xx.
 
         Args:
             query: GraphQL query or mutation string.
             variables: Optional variables dict.
+            op: Operation label for the per-request attribution User-Agent
+                (e.g. ``"add_access"``). When set, overrides the client's
+                config-level UA for this request only.
 
         Returns:
             Parsed JSON response body.
@@ -177,10 +229,18 @@ class TwingateClient:
         if variables:
             payload["variables"] = variables
 
+        # Per-request UA override: httpx per-request headers take precedence
+        # over the client default set in _make_http_client.
+        request_headers = (
+            {"User-Agent": build_user_agent(version=self._version, op=op)}
+            if op is not None
+            else None
+        )
+
         backoff = _BASE_BACKOFF
         for attempt in range(1, _MAX_RETRIES + 1):
             try:
-                resp = await self._http.post(self._url, json=payload)
+                resp = await self._http.post(self._url, json=payload, headers=request_headers)
             except httpx.TransportError as exc:
                 logger.warning(
                     "graphql_transport_error",
@@ -269,7 +329,7 @@ class TwingateClient:
             TwingateAuthError: If the API key is invalid.
             TwingateAPIError: If the tenant is unreachable.
         """
-        await self._post(LIST_GROUPS, {"first": 1})
+        await self._post(LIST_GROUPS, {"first": 1}, op="connect")
         logger.info("twingate_connected", tenant=self._tenant)
         return True
 
@@ -298,7 +358,7 @@ class TwingateClient:
                 variables["filter"] = filter_val
             if cursor:
                 variables["after"] = cursor
-            body = await self._post(LIST_GROUPS, variables)
+            body = await self._post(LIST_GROUPS, variables, op="list_groups")
             page = body["data"]["groups"]
 
             for edge in page["edges"]:
@@ -346,7 +406,7 @@ class TwingateClient:
             if cursor:
                 variables["after"] = cursor
 
-            body = await self._post(LIST_RESOURCES, variables)
+            body = await self._post(LIST_RESOURCES, variables, op="list_resources")
             page = body["data"]["resources"]
 
             for edge in page["edges"]:
@@ -400,7 +460,7 @@ class TwingateClient:
             if cursor:
                 variables["after"] = cursor
 
-            body = await self._post(GET_RESOURCE_ACCESS, variables)
+            body = await self._post(GET_RESOURCE_ACCESS, variables, op="list_access")
             access_page = body["data"]["resource"]["access"]
             edges.extend(_parse_access_edges(access_page["edges"]))
 
@@ -429,7 +489,7 @@ class TwingateClient:
             "resourceId": resource_id,
             "access": [a.to_graphql_dict() for a in access],
         }
-        body = await self._post(RESOURCE_ACCESS_ADD, variables)
+        body = await self._post(RESOURCE_ACCESS_ADD, variables, op="add_access")
         result = body["data"]["resourceAccessAdd"]
         if not result["ok"]:
             logger.error(
@@ -459,7 +519,7 @@ class TwingateClient:
             "resourceId": resource_id,
             "principalIds": principal_ids,
         }
-        body = await self._post(RESOURCE_ACCESS_REMOVE, variables)
+        body = await self._post(RESOURCE_ACCESS_REMOVE, variables, op="remove_access")
         result = body["data"]["resourceAccessRemove"]
         if not result["ok"]:
             logger.error(

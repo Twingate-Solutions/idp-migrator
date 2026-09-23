@@ -1,6 +1,31 @@
-PySide6>=6.7,<7.0
-httpx>=0.27,<1.0
-pydantic>=2.7,<3.0
-pydantic-settings>=2.3,<3.0
-rapidfuzz>=3.9,<4.0
-structlog>=24.1,<25.0
+# Pinned runtime lock — DO NOT EDIT BY HAND.
+#
+# Exact versions (direct + transitive) frozen with pip to stop CI dependency
+# drift. Edit ranges in requirements.in, then regenerate:
+#
+#   python -m venv .venv-lock
+#   .venv-lock/Scripts/pip install -r requirements.in     # bin/ on Unix
+#   .venv-lock/Scripts/pip freeze > requirements.txt
+#   # restore this header afterwards
+#
+# Resolved on Python 3.12. These package versions are identical across
+# Linux / Windows / macOS, so this lock is cross-platform as-is.
+annotated-types==0.8.0
+anyio==4.15.1
+certifi==2026.7.22
+h11==0.16.0
+httpcore==1.0.9
+httpx==0.28.1
+idna==3.20
+pydantic==2.13.5
+pydantic-core==2.46.5
+pydantic-settings==2.15.0
+PySide6==6.11.2
+PySide6-Addons==6.11.2
+PySide6-Essentials==6.11.2
+python-dotenv==1.2.3
+rapidfuzz==3.14.6
+shiboken6==6.11.2
+structlog==24.4.0
+typing-extensions==4.16.0
+typing-inspection==0.4.4

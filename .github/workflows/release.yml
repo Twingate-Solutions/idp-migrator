@@ -57,6 +57,10 @@ jobs:
       - name: Build with PyInstaller
         env:
           QT_QPA_PLATFORM: offscreen
+          # Build identity for the Twingate API attribution User-Agent.
+          # The tag (e.g. v1.2.3) is baked into the binary; the spec strips
+          # the leading "v". Falls back to 0.0.0-dev if unset.
+          APP_VERSION: ${{ github.ref_name }}
         run: pyinstaller migrator.spec
 
       - name: Rename binary (Unix)

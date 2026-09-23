@@ -188,3 +188,5 @@ docs/TECHNICAL_PLAN.md
 docs/superpowers/
 .superpowers/
 .vscode/
+# PyInstaller build-time generated version hook (see migrator.spec)
+_pyi_version_hook.py
